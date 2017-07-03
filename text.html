@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+</head>
+<body>
+    <script>
+        var schedules = [{"title":"开会","start":"20170630","end":"20170702","type":"life"},
+        {"title":"吃饭","start":"20170711","end":"20170715","type":"life"},
+        {"title":"打球","start":"20170714","end":"20170716","type":"life"},
+        {"title":"玩游戏","start":"20170720","end":"20170722","type":"life"}];
+        function caldomdata(schedules){
+            schedules.forEach(function(richeng,index) {
+                console.log(richeng.start);
+            }, this);
+        };
+        caldomdata(schedules);
+    </script>
+</body>
+</html>
