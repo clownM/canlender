@@ -72,7 +72,7 @@
             padding-right: 5px;
             box-sizing: border-box;
         }
-        .tablebox2 .row .schedule tr td .s.life{
+        .tablebox2 .row .schedule tr td .s{
             height: 20px;
             line-height: 20px;
             border-radius: 10px;
@@ -81,6 +81,9 @@
         }
         .tablebox2 .row .schedule tr td .s.life{
             background-color: greenyellow;
+        }
+        .tablebox2 .row .schedule tr td .s.important{
+            background-color: rosybrown;
         }
     </style>
 </head>
@@ -128,8 +131,19 @@
                 schedule:[
                     {"title":"开会","start":"20170630","end":"20170702","type":"life"},
                     {"title":"吃饭","start":"20170711","end":"20170715","type":"life"},
+                    {"title":"写程序","start":"20170712","end":"20170714","type":"life"},
                     {"title":"打球","start":"20170714","end":"20170716","type":"life"},
-                    {"title":"玩游戏","start":"20170720","end":"20170722","type":"life"}]
+                    {"title":"玩游戏","start":"20170720","end":"20170722","type":"life"},
+                    {"title":"跨周事件","start":"20170722","end":"20170731","type":"important"}
+                ],
+                daythingsnumber:[
+                    [0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0],
+                    [0,0,0,0,0,0,0]
+                ]
             },
             mounted:function(){
                 var dayarr = [];
@@ -148,30 +162,30 @@
                 var _m = this.month == 1 ? 12 : this.month-1;      //上个月的月份
                 var fdw = firstdayweek == 0 ? 7 : firstdayweek;    
                 while(fdw-- > 1){
-                    dayarr.unshift({"year":_y,"month":_m,"day":lastmonthlastday--,"lastmonth":true});
+                    dayarr.unshift({"year":_y,"month":_m,"day":lastmonthlastday--,"lastmonth":true,"occupation":[]});
                 }
                 //放入本月的日期
                 var themonthday = 1;
                 while(daycount--){
-                    dayarr.push({"year":this.year,"month":this.month,"day":themonthday++,"themonth":true});
+                    dayarr.push({"year":this.year,"month":this.month,"day":themonthday++,"themonth":true,"occupation":[]});
                 }
                 //用下月的开头填满数组
                 //补足35项或者42项
                 var nextmonthday = 1;
                 if(dayarr.length <= 35){
                     while(dayarr.length != 35){
-                        dayarr.push({"year":y,"month":m,"day":nextmonthday++,"nextmonth":true});
+                        dayarr.push({"year":y,"month":m,"day":nextmonthday++,"nextmonth":true,"occupation":[]});
                     }
                 }else{
                     while(dayarr.length != 42){
-                        dayarr.push({"year":y,"month":m,"day":nextmonthday++,"nextmonth":true});
+                        dayarr.push({"year":y,"month":m,"day":nextmonthday++,"nextmonth":true,"occupation":[]});
                     }
                 };                
                 this.dayarr=dayarr;   
-                this.calDomData(dayarr,this.schedule);            
+                this.calDomData(dayarr,this.schedule,this.daythingsnumber);            
             },
             methods:{
-                calDomData(dayarr,schedule){
+                calDomData(dayarr,schedule,daythingsnumber){
                     var scheduledomdata =dayarr.length == 35 ? [
                         [[],[],[]],
                         [[],[],[]],
@@ -186,7 +200,69 @@
                         [[],[],[]],
                         [[],[],[]]
                     ];
-                    scheduledomdata.forEach(function(week,index1){
+                    //掌握的数据有哪些
+                    //1.dayarr 这是一个35项或者42项的数组
+                    //2.schedule 后台传过来的JSON数据   
+                    //3.daythingsnumber 这是每天的事情数
+                    //console.log(dayarr);
+                    //console.log(schedule);
+                   // console.log(daythingsnumber);
+                    for(let rowindex = 0;rowindex < dayarr.length / 7;rowindex++) {
+                        let weekarr =dayarr.slice(rowindex * 7,rowindex * 7 + 7);
+                        weekarr.forEach(function(theday,index){
+                            var thedayschedule = [];
+                            schedule.forEach(function(theschedule,index2){
+                                var startyear = Number(theschedule.start.slice(0,4));
+                                var startmonth = Number(theschedule.start.slice(4,6));
+                                var startday = Number(theschedule.start.slice(6,8));
+
+                                var endyear = Number(theschedule.end.slice(0,4));
+                                var endmonth = Number(theschedule.end.slice(4,6));
+                                var endday = Number(theschedule.end.slice(6,8));
+                               // console.log(startyear+'-'+startmonth+'-'+startday);
+                                var colspan = (new Date(endyear,endmonth-1,endday) - new Date(startyear,startmonth-1,startday)) / (1000*60*60*24) + 1;
+                                theschedule.colspan = colspan;
+                                if(theday.year == startyear && theday.month == startmonth && theday.day == startday){
+                                    thedayschedule.push(theschedule);
+                                };      
+                            });
+       
+                            for(let line = 0;line < 3;line++){
+                                if(theday.occupation.indexOf(line) == -1){
+                                    var first =thedayschedule.shift();
+                                    if(first === undefined){
+                                         scheduledomdata[rowindex][line].push({"title":"","colspan":"1"});
+                                    }else{
+                                        scheduledomdata[rowindex][line].push({"title":first.title,"colspan":first.colspan,"type":first.type});
+                                        console.log(scheduledomdata[rowindex][line]);
+                                        if(first.colspan && first.colspan != 1){
+                                            let end = index + first.colspan - 1 > 6 ? 6 : index + first.colspan -1;
+                                            for(let _i = index+1;_i <= end;_i++){
+                                                weekarr[_i].occupation.push(line);
+                                            }
+
+                                            let rest = (first.colspan - (7 - index));
+                                            var _rest;
+                                            var count = 0;
+                                            while(rest > 0){
+                                                _rest = rest > 7 ? 7 : rest;
+                                                rest -= _rest;
+                                                count++;
+                                                var nextweek =dayarr.slice((rowindex+count)*7,(rowindex+count)*7+7); 
+                                                scheduledomdata[rowindex+count][line].push({"title":first.title,"colspan":_rest,"type":first.type});
+                                                for(let i = 0;i < _rest;i++){
+                                                    nextweek[i].occupation.push(line);
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                                   
+                            }
+                        })
+                    }
+                    this.scheduledomdata = scheduledomdata;
+                   /* scheduledomdata.forEach(function(week,index1){
                         week.forEach(function(tr,index2){
                             for(var i=0;i<7;i++){
                                 let theday = dayarr[index1 * 7 + i];
@@ -209,14 +285,13 @@
                                     let thetd = tr[i];
                                     if(thetd.year == year && thetd.month == month && thetd.day == day){
                                         thetd.title = item.title;
-                                        thetd.colspan =colspan;
+                                        thetd.colspan = colspan;
                                         thetd.type =item.type;
                                     }
                                 }
                             })
                         })
-                    });
-                    this.scheduledomdata = scheduledomdata;
+                    });*/
                 },
                 //返回一个5*7的数组
                 theweek:function(){
@@ -233,7 +308,6 @@
                 }
             }
         })
-
     </script>
 </body>
 </html>
